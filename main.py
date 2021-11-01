@@ -93,29 +93,44 @@ def tabu_search(permutation, tabu_list):
         #print(localBest.distance)
     print_permutation(best.cities)
     print("Distance ", best.distance)
-    draw_salesman(best,"Solution")
+    return best
 
 
-def draw_salesman(permutation, window_title):
+def draw_salesman(first_permutation, final_permutation):
     window = Tk()
-    window.title(window_title)
-    c = Canvas(window, width=500, height=500)
+    c = Canvas(window, width=500, height=400)
     c.pack()
-    c2 = Canvas(window, width=500, height=500)
+    c2 = Canvas(window, width=500, height=400)
     c2.pack()
-    
-    for city in permutation.cities:
+    #zadanie
+    for city in first_permutation.cities:
         c.create_oval(city.x*2-5, city.y*2-5, city.x*2+5, city.y*2+5,fill="red")
         c.create_text(city.x*2, city.y*2-10, text=str(city.n))
 
-    for i in range(len(permutation.cities)-1):
-        city1 = permutation.cities[i]
-        city2 = permutation.cities[i+1]
+    for i in range(len(first_permutation.cities) - 1):
+        city1 = first_permutation.cities[i]
+        city2 = first_permutation.cities[i + 1]
         c.create_line(city1.x*2, city1.y*2, city2.x*2, city2.y*2)
-    last = len(permutation.cities)-1
-    city1 = permutation.cities[last]
-    city2 = permutation.cities[0]
+    last = len(first_permutation.cities) - 1
+    city1 = first_permutation.cities[last]
+    city2 = first_permutation.cities[0]
     c.create_line(city1.x * 2, city1.y * 2, city2.x * 2, city2.y * 2)
+
+
+    # vysledok
+    for city in final_permutation.cities:
+        c2.create_oval(city.x*2-5, city.y*2-5, city.x*2+5, city.y*2+5,fill="red")
+        c2.create_text(city.x*2, city.y*2-10, text=str(city.n))
+
+    for i in range(len(final_permutation.cities) - 1):
+        city1 = final_permutation.cities[i]
+        city2 = final_permutation.cities[i + 1]
+        c2.create_line(city1.x*2, city1.y*2, city2.x*2, city2.y*2)
+    last = len(final_permutation.cities) - 1
+    city1 = final_permutation.cities[last]
+    city2 = final_permutation.cities[0]
+    c2.create_line(city1.x * 2, city1.y * 2, city2.x * 2, city2.y * 2)
+
     window.mainloop()
 
 
@@ -142,9 +157,9 @@ def main():
     print(start_perm.distance)
     print("-"*50)
     start = time.time()
-    tabu_search(start_perm, [])
+    final = tabu_search(start_perm, [])
 
-    draw_salesman(first, "Generated path")
+    draw_salesman(first, final)
     end = time.time()
     print(end-start, "s")
 
