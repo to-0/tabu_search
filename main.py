@@ -1,6 +1,7 @@
 import math
 import random
 import time
+from tkinter import *
 MAX_TABU_LENGTH = 50
 MAX_STEPS = 50000
 
@@ -37,10 +38,13 @@ def calculate_distance(cities):
     distance = 0
     for i in range(length-1):
         distance += math.sqrt(math.pow((cities[i].x - cities[i+1].x), 2) + math.pow((cities[i].y - cities[i+1].y), 2))
+
+    l = len(cities)-1
+    distance += math.sqrt(math.pow((cities[l].x - cities[0].x), 2) + math.pow((cities[l].y - cities[0].y), 2))
     return distance
 
 
-def create_children(start,children_list):
+def create_children(start, children_list):
     #children_list = []
     best_child = -1
     best_distance = -1
@@ -86,9 +90,33 @@ def tabu_search(permutation, tabu_list):
             tabu_list.append(best.cities)
         best = localBest
         count += 1
-        print(localBest.distance)
+        #print(localBest.distance)
     print_permutation(best.cities)
     print("Distance ", best.distance)
+    draw_salesman(best,"Solution")
+
+
+def draw_salesman(permutation, window_title):
+    window = Tk()
+    window.title(window_title)
+    c = Canvas(window, width=500, height=500)
+    c.pack()
+    c2 = Canvas(window, width=500, height=500)
+    c2.pack()
+    
+    for city in permutation.cities:
+        c.create_oval(city.x*2-5, city.y*2-5, city.x*2+5, city.y*2+5,fill="red")
+        c.create_text(city.x*2, city.y*2-10, text=str(city.n))
+
+    for i in range(len(permutation.cities)-1):
+        city1 = permutation.cities[i]
+        city2 = permutation.cities[i+1]
+        c.create_line(city1.x*2, city1.y*2, city2.x*2, city2.y*2)
+    last = len(permutation.cities)-1
+    city1 = permutation.cities[last]
+    city2 = permutation.cities[0]
+    c.create_line(city1.x * 2, city1.y * 2, city2.x * 2, city2.y * 2)
+    window.mainloop()
 
 
 def load_example():
@@ -99,14 +127,24 @@ def load_example():
     return cities
 
 def main():
-    cities = generate_cities(20)
+    global MAX_TABU_LENGTH
+    global MAX_STEPS
+    number_cities = int(input("Number of cities "))
+    cities = generate_cities(number_cities)
     #cities = load_example()
+    length_tabu = int(input("Length of tabu list "))
+    MAX_TABU_LENGTH = length_tabu
+    MAX_STEPS = int(input("Number of generations "))
     start_perm = Permutation(cities, calculate_distance(cities))
+    first = start_perm
+
     print_permutation(cities)
     print(start_perm.distance)
     print("-"*50)
     start = time.time()
     tabu_search(start_perm, [])
+
+    draw_salesman(first, "Generated path")
     end = time.time()
     print(end-start, "s")
 
