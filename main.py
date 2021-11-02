@@ -44,10 +44,12 @@ def calculate_distance(cities):
     return distance
 
 
-def create_children(start, children_list, tabu_list):
+def create_children(start, children_list, tabu_list,tabu_test):
     #children_list = []
     best_child = -1
     best_distance = -1
+    best_child_t = -1
+    best_distance_t = -1
     global best_solution
     for i in range(len(start.cities)-1):
         temp = start.cities[:]
@@ -55,13 +57,20 @@ def create_children(start, children_list, tabu_list):
         temp[i] = temp[i+1]
         temp[i+1] = t
         p = Permutation(temp, calculate_distance(temp))
-        if best_child == -1:
-            best_child = i
-            best_distance = p.distance
-        elif best_distance > p.distance and p.cities not in tabu_list:
-            best_child = i
-            best_distance = p.distance
-            
+        # if best_child == -1:
+        #     best_child = i
+        #     best_distance = p.distance
+        # elif best_distance > p.distance and p.cities not in tabu_list:
+        #     best_child = i
+        #     best_distance = p.distance
+
+        if best_child_t == -1:
+            best_child_t = i
+            best_distance_t = p.distance
+        elif best_distance_t > p.distance and p.cities and not find_in_tabu(tabu_test,p.cities):
+            best_child_t = i
+            best_distance_t = p.distance
+
 
         #elif p.cities in tabu_list:
             #print("Je v tabu liste", p.distance)
@@ -73,10 +82,10 @@ def create_children(start, children_list, tabu_list):
     temp[k] = temp[0]
     temp[0] = t
     p = Permutation(temp, calculate_distance(temp))
-    if best_distance > p.distance:
-        best_child = len(start.cities)-1
+    if best_distance_t > p.distance:
+        best_child_t = len(start.cities)-1
     children_list.append(p)
-    return best_child
+    return best_child_t
 
 
 def create_tabu_value(cities):
@@ -85,20 +94,24 @@ def create_tabu_value(cities):
         s += str(city.n)+ " "
     return s
 
-def find_in_tabu(tabu,cities_perm):
+def find_in_tabu(tabu, cities_perm, check_type):
+    if check_type ==1:
+        return cities_perm in tabu
+
     val = create_tabu_value(cities_perm)
     for element in tabu:
         if element == val:
+            #print("Je tam")
             return True
     return False
 
-def tabu_search(permutation, tabu_list,tabu_test):
+def tabu_search(permutation, tabu_list, tabu_test):
     count = 0
     current = permutation
     global best_solution
     while count < MAX_STEPS:
         children = []
-        best_child_pos = create_children(current, children, tabu_list)
+        best_child_pos = create_children(current, children, tabu_list, tabu_test)
         #tabu_list.append(children[0].cities)
         #tabu_list.append(children[1].cities)
         # if children[3].cities not in tabu_list:
@@ -111,10 +124,13 @@ def tabu_search(permutation, tabu_list,tabu_test):
         # sme v lokalnom extreme
         val = create_tabu_value(current.cities)
         if localBest.distance > current.distance:
-            if len(tabu_list) > MAX_TABU_LENGTH:
+            #if len(tabu_list) > MAX_TABU_LENGTH:
+            if len(tabu_test) > MAX_TABU_LENGTH:
                 #print("Max length exceeded ")
-                tabu_list.pop(0)
-            tabu_list.append(current.cities)
+                #tabu_list.pop(0)
+                tabu_test.pop(0)
+            #tabu_list.append(current.cities)
+            tabu_test.append(val)
         current = localBest
 
         if current.distance < best_solution.distance:
@@ -211,12 +227,13 @@ def main():
     start_perm = Permutation(cities, calculate_distance(cities))
     best_solution = start_perm
     first = start_perm
+    check_type = int(input("Check type 1/2\n"))
 
     print_permutation(cities)
     print(start_perm.distance)
     print("-"*50)
     start = time.time()
-    final = tabu_search(start_perm, [],[])
+    final = tabu_search(start_perm, [], [],check_type)
     end = time.time()
     print(end - start, "s")
     draw_salesman(first, final)
