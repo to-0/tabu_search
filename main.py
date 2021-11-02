@@ -4,7 +4,7 @@ import time
 from tkinter import *
 MAX_TABU_LENGTH = 50
 MAX_STEPS = 50000
-
+best_solution = None
 
 class Point:
     def __init__(self, x: int, y: int, n: int):
@@ -21,8 +21,8 @@ class Permutation:
 def generate_cities(n):
     cities = []
     for i in range(n):
-        x = random.randint(0, 200)
-        y = random.randint(0, 200)
+        x = random.randint(0, 100)
+        y = random.randint(0, 100)
         cities.append(Point(x, y, i+1))
     return cities
 
@@ -44,10 +44,11 @@ def calculate_distance(cities):
     return distance
 
 
-def create_children(start, children_list):
+def create_children(start, children_list, tabu_list):
     #children_list = []
     best_child = -1
     best_distance = -1
+    global best_solution
     for i in range(len(start.cities)-1):
         temp = start.cities[:]
         t = temp[i]
@@ -57,9 +58,13 @@ def create_children(start, children_list):
         if best_child == -1:
             best_child = i
             best_distance = p.distance
-        elif best_distance > p.distance:
+        elif best_distance > p.distance and p.cities not in tabu_list:
             best_child = i
             best_distance = p.distance
+            
+
+        #elif p.cities in tabu_list:
+            #print("Je v tabu liste", p.distance)
         children_list.append(p)
     # toto ked tak chcem vymazat
     k = len(start.cities)-1
@@ -74,26 +79,51 @@ def create_children(start, children_list):
     return best_child
 
 
-def tabu_search(permutation, tabu_list):
+def create_tabu_value(cities):
+    s = ""
+    for city in cities:
+        s += str(city.n)+ " "
+    return s
+
+def find_in_tabu(tabu,cities_perm):
+    val = create_tabu_value(cities_perm)
+    for element in tabu:
+        if element == val:
+            return True
+    return False
+
+def tabu_search(permutation, tabu_list,tabu_test):
     count = 0
-    best = permutation
+    current = permutation
+    global best_solution
     while count < MAX_STEPS:
         children = []
-        best_child_pos = create_children(best,children)
+        best_child_pos = create_children(current, children, tabu_list)
+        #tabu_list.append(children[0].cities)
+        #tabu_list.append(children[1].cities)
+        # if children[3].cities not in tabu_list:
+        #     print("Toto je dobre")
+        # if children[0].cities in tabu_list:
+        #     print("Aj toto")
         #print(len(children), "haha")
         #print(print_permutation(children[-1].cities))
         localBest = children[best_child_pos]
         # sme v lokalnom extreme
-        if localBest.distance > best.distance:
+        val = create_tabu_value(current.cities)
+        if localBest.distance > current.distance:
             if len(tabu_list) > MAX_TABU_LENGTH:
-                tabu_list = tabu_list[1:]
-            tabu_list.append(best.cities)
-        best = localBest
+                #print("Max length exceeded ")
+                tabu_list.pop(0)
+            tabu_list.append(current.cities)
+        current = localBest
+
+        if current.distance < best_solution.distance:
+            best_solution = current
         count += 1
         #print(localBest.distance)
-    print_permutation(best.cities)
-    print("Distance ", best.distance)
-    return best
+    print_permutation(best_solution.cities)
+    print("Distance ", best_solution.distance)
+    return current
 
 
 def draw_salesman(first_permutation, final_permutation):
@@ -141,27 +171,58 @@ def load_example():
               Point(100, 40, 16), Point(200, 40, 17), Point(20, 20, 18), Point(60, 20, 19), Point(160, 20, 20)]
     return cities
 
+
+def write_to_file(cities):
+    f = open("input.txt", "w")
+    for city in cities:
+        print(city.x, city.y, file=f)
+    f.close()
+
+def load_from_file():
+    f = open("input.txt","r")
+    lines = f.readlines()
+    cities = []
+    counter = 0
+    for line in lines:
+        line = line.split(" ")
+        x = int(line[0])
+        y = int(line[1])
+        counter += 1
+        cities.append(Point(x,y,counter))
+    f.close()
+    return cities
+
 def main():
     global MAX_TABU_LENGTH
     global MAX_STEPS
-    number_cities = int(input("Number of cities "))
-    cities = generate_cities(number_cities)
+    global best_solution
+    load_option = input("Read from input file or generate random permutation? 1/2 \n")
+    cities = []
+    if load_option == "1":
+        cities = load_from_file()
+    else:
+        number_cities = int(input("Number of cities "))
+        cities = generate_cities(number_cities)
+    #write_to_file(cities)
     #cities = load_example()
     length_tabu = int(input("Length of tabu list "))
     MAX_TABU_LENGTH = length_tabu
     MAX_STEPS = int(input("Number of generations "))
     start_perm = Permutation(cities, calculate_distance(cities))
+    best_solution = start_perm
     first = start_perm
 
     print_permutation(cities)
     print(start_perm.distance)
     print("-"*50)
     start = time.time()
-    final = tabu_search(start_perm, [])
-
-    draw_salesman(first, final)
+    final = tabu_search(start_perm, [],[])
     end = time.time()
-    print(end-start, "s")
+    print(end - start, "s")
+    draw_salesman(first, final)
+    save = input("Save this cities config? yes/no \n")
+    if save=="yes":
+        write_to_file(first.cities)
 
 
 if __name__ == '__main__':
