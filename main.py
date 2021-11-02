@@ -47,9 +47,7 @@ def calculate_distance(cities):
 
 
 def create_children(start, children_list, tabu_list, check_type):
-    #children_list = []
     best_child = -1
-    best_distance = -1
     global best_solution
     for i in range(len(start.cities)-1):
         temp = start.cities[:]
@@ -58,24 +56,18 @@ def create_children(start, children_list, tabu_list, check_type):
         temp[i+1] = t
         p = Permutation(temp, calculate_distance(temp))
         if best_child == -1:
-            best_child = i
-            best_distance = p.distance
-        elif best_distance > p.distance and not find_in_tabu(tabu_list, p.cities, check_type):
-            best_child = i
-            best_distance = p.distance
-
-        #elif p.cities in tabu_list:
-            #print("Je v tabu liste", p.distance)
+            best_child = p
+        elif best_child.distance > p.distance and p.cities not in tabu_list:
+            best_child = p
         children_list.append(p)
-    # toto ked tak chcem vymazat
     k = len(start.cities)-1
     temp = start.cities[:]
     t = temp[k]
     temp[k] = temp[0]
     temp[0] = t
     p = Permutation(temp, calculate_distance(temp))
-    if best_distance > p.distance:
-        best_child = len(start.cities)-1
+    if best_child.distance > p.distance and p.cities not in tabu_list:
+        best_child = p
     children_list.append(p)
     return best_child
 
@@ -115,36 +107,34 @@ def tabu_search(permutation, tabu_list, check_type):
     global best_solution
     while count < MAX_STEPS:
         children = []
-        best_child_pos = create_children(current, children, tabu_list,check_type)
-        #tabu_list.append(children[0].cities)
-        #tabu_list.append(children[1].cities)
-        # if children[3].cities not in tabu_list:
-        #     print("Toto je dobre")
-        # if children[0].cities in tabu_list:
-        #     print("Aj toto")
-        #print(len(children), "haha")
-        #print(print_permutation(children[-1].cities))
-        localBest = children[best_child_pos]
-        # sme v lokalnom extreme
-        if check_type == 2:
-            val = create_tabu_value(current.cities)
-        if localBest.distance > current.distance:
-            if len(tabu_list) > MAX_TABU_LENGTH:
-                #print("Max length exceeded ")
-                tabu_list.pop(0)
-            if check_type == 1:
-                tabu_list.append(current.cities)
-            else:
-                tabu_list.append(val)
-        current = localBest
+        print("current")
+        print_permutation(current.cities)
+        best_child = create_children(current, children, tabu_list, check_type)
+        # for child in children:
+        #     print_permutation(child.cities)
+        # lokalny extrem nemam mensiu vzdialenost
+        if current.distance < best_child.distance:
+            print("Local extreme")
 
+            tabu_list.append(current.cities)
+        current = best_child
+        # if check_type == 1:
+        #     tabu_list.append(current.cities)
+        # else:
+        #     val = create_tabu_value(current.cities)
+        #     tabu_list.append(val)
         if current.distance < best_solution.distance:
+            print("new best ", current.distance)
             best_solution = current
+        if len(tabu_list) > MAX_TABU_LENGTH:
+            #print("Max length exceeded ")
+            tabu_list = tabu_list[1:]
+        print("="*50)
         count += 1
         #print(localBest.distance)
     print_permutation(best_solution.cities)
     print("Distance ", best_solution.distance)
-    return current
+    return best_solution
 
 
 def draw_salesman(first_permutation, final_permutation):
@@ -200,7 +190,7 @@ def write_to_file(cities):
     f.close()
 
 def load_from_file():
-    f = open("input.txt","r")
+    f = open("input.txt", "r")
     lines = f.readlines()
     cities = []
     counter = 0
@@ -226,7 +216,7 @@ def main():
         cities = generate_cities(number_cities)
 
     #write_to_file(cities)
-    #cities = load_example()
+    cities = load_example()
     length_tabu = int(input("Length of tabu list "))
     MAX_TABU_LENGTH = length_tabu
     MAX_STEPS = int(input("Number of generations "))
