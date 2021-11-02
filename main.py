@@ -55,9 +55,9 @@ def create_children(start, children_list, tabu_list, check_type):
         temp[i] = temp[i+1]
         temp[i+1] = t
         p = Permutation(temp, calculate_distance(temp))
-        if best_child == -1:
+        if best_child == -1 and p.cities not in tabu_list:
             best_child = p
-        elif best_child.distance > p.distance and p.cities not in tabu_list:
+        elif best_child != -1 and best_child.distance > p.distance and p.cities not in tabu_list:
             best_child = p
         children_list.append(p)
     k = len(start.cities)-1
@@ -107,29 +107,24 @@ def tabu_search(permutation, tabu_list, check_type):
     global best_solution
     while count < MAX_STEPS:
         children = []
-        print("current")
-        print_permutation(current.cities)
+        #print("current")
+        #print_permutation(current.cities)
+        #print(current.distance)
         best_child = create_children(current, children, tabu_list, check_type)
         # for child in children:
         #     print_permutation(child.cities)
         # lokalny extrem nemam mensiu vzdialenost
-        if current.distance < best_child.distance:
-            print("Local extreme")
-
-            tabu_list.append(current.cities)
+        #if current.distance <= best_child.distance:
+            #print("Local extreme")
+        tabu_list.append(current.cities)
         current = best_child
-        # if check_type == 1:
-        #     tabu_list.append(current.cities)
-        # else:
-        #     val = create_tabu_value(current.cities)
-        #     tabu_list.append(val)
         if current.distance < best_solution.distance:
             print("new best ", current.distance)
             best_solution = current
         if len(tabu_list) > MAX_TABU_LENGTH:
             #print("Max length exceeded ")
             tabu_list = tabu_list[1:]
-        print("="*50)
+        #print("="*50)
         count += 1
         #print(localBest.distance)
     print_permutation(best_solution.cities)
