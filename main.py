@@ -7,7 +7,6 @@ MAX_STEPS = 50000
 best_solution = None
 children_type = 1
 
-
 class Point:
     def __init__(self, x: int, y: int, n: int):
         self.x = x
@@ -35,18 +34,8 @@ def print_permutation(cities):
         s.append(city.n)
     print(s)
 
-def calculate_distance(cities):
-    length = len(cities)
-    distance = 0
-    for i in range(length-1):
-        distance += math.sqrt(math.pow((cities[i].x - cities[i+1].x), 2) + math.pow((cities[i].y - cities[i+1].y), 2))
 
-    l = len(cities)-1
-    distance += math.sqrt(math.pow((cities[l].x - cities[0].x), 2) + math.pow((cities[l].y - cities[0].y), 2))
-    return distance
-
-
-def create_children_test(start, children_list, tabu_list, matrix):
+def create_children_second_type(start, children_list, tabu_list, matrix):
     best_child = -1
     global best_solution
     r = random.randint(0, len(start.cities)-1)
@@ -58,7 +47,9 @@ def create_children_test(start, children_list, tabu_list, matrix):
         temp[i] = temp[r]
         temp[r] = t
 
-        p = Permutation(temp, calculate_distance_test(temp, matrix))
+        p = Permutation(temp, calculate_distance_w_matrix(temp, matrix))
+        if best_child == -1:
+            best_child = p
         # p = Permutation(temp, new_dist)
         if (best_child == -1 or best_child.distance > p.distance) and p.cities not in tabu_list:
             best_child = p
@@ -68,22 +59,7 @@ def create_children_test(start, children_list, tabu_list, matrix):
     return best_child
 
 
-def create_tabu_value(cities):
-    s = ""
-    for city in cities:
-        s += str(city.n)+ " "
-    return s
-
-def check_occurence_limit(d,val):
-    occurences = d.get(val)
-    if occurences is None:
-        return False
-    elif occurences > 5:
-        #print("Vela tam bol")
-        return True
-    return False
-
-def create_children_neighbours(start, children_list, tabu_list, matrix, occurance_dictionary):
+def create_children_neighbours(start, children_list, tabu_list, matrix):
     best_child = -1
     global best_solution
     for i in range(len(start.cities)-1):
@@ -91,9 +67,8 @@ def create_children_neighbours(start, children_list, tabu_list, matrix, occuranc
         t = temp[i]
         temp[i] = temp[i+1]
         temp[i+1] = t
-        p = Permutation(temp, calculate_distance_test(temp, matrix))
-        #val = create_tabu_value(p.cities)
-        if (best_child == -1 or best_child.distance > p.distance) and p.cities not in tabu_list: #and not check_occurence_limit(occurance_dictionary, val)
+        p = Permutation(temp, calculate_distance_w_matrix(temp, matrix))
+        if (best_child == -1 or best_child.distance > p.distance) and p.cities not in tabu_list:
             best_child = p
         children_list.append(p)
     k = len(start.cities)-1
@@ -101,7 +76,7 @@ def create_children_neighbours(start, children_list, tabu_list, matrix, occuranc
     t = temp[k]
     temp[k] = temp[0]
     temp[0] = t
-    p = Permutation(temp, calculate_distance_test(temp, matrix))
+    p = Permutation(temp, calculate_distance_w_matrix(temp, matrix))
     if best_child.distance > p.distance and p.cities not in tabu_list:
         best_child = p
     children_list.append(p)
@@ -116,28 +91,24 @@ def tabu_search(permutation, tabu_list, matrix):
     while count < MAX_STEPS:
         children = []
         if children_type == 2:
-            best_child = create_children_test(current, children, tabu_list, matrix)
+            best_child = create_children_second_type(current, children, tabu_list, matrix)
         else:
-            best_child = create_children_neighbours(current, children, tabu_list, matrix, occurence_dictionary)
+            best_child = create_children_neighbours(current, children, tabu_list, matrix)
         # print("current")
         # print_permutation(current.cities)
         # print(current.distance)
+        if best_child == -1:
+            best_child = children[0]
 
         if current.distance < best_solution.distance:
-            print("new best ", current.distance)
+            print("Nové minimum ", current.distance)
             print_permutation(best_solution.cities)
-            print("Generation ", count)
+            print("Generácia ", count)
             best_solution = current
         # lokalny extrem nemam mensiu vzdialenost
         if current.distance <= best_child.distance:
             tabu_list.append(current.cities)
-            # if children_type == 1:
-            #     val = create_tabu_value(best_child.cities)
-            #     oc = occurence_dictionary.get(val)
-            #     if oc is None:
-            #         occurence_dictionary[val] = 1
-            #     else:
-            #         occurence_dictionary[val] +=1
+            #print("Lokalny extrem")
         current = best_child
 
         if len(tabu_list) > MAX_TABU_LENGTH:
@@ -145,7 +116,7 @@ def tabu_search(permutation, tabu_list, matrix):
         count += 1
         #print("="*50)
     print_permutation(best_solution.cities)
-    print("Distance ", best_solution.distance)
+    print("Celková vzdialenosť ", best_solution.distance)
     return best_solution
 
 
@@ -157,32 +128,32 @@ def draw_salesman(first_permutation, final_permutation):
     c2.pack()
     #zadanie
     for city in first_permutation.cities:
-        c.create_oval(city.x-5, city.y-5, city.x+5, city.y+5,fill="red")
-        c.create_text(city.x, city.y-10, text=str(city.n))
+        c.create_oval(city.x*2-5, city.y*2-5, city.x*2+5, city.y*2+5,fill="red")
+        c.create_text(city.x*2, city.y*2-10, text=str(city.n))
 
     for i in range(len(first_permutation.cities) - 1):
         city1 = first_permutation.cities[i]
         city2 = first_permutation.cities[i + 1]
-        c.create_line(city1.x, city1.y, city2.x, city2.y)
+        c.create_line(city1.x*2, city1.y*2, city2.x*2, city2.y*2)
     last = len(first_permutation.cities) - 1
     city1 = first_permutation.cities[last]
     city2 = first_permutation.cities[0]
-    c.create_line(city1.x, city1.y, city2.x, city2.y)
+    c.create_line(city1.x*2, city1.y*2, city2.x*2, city2.y*2)
 
 
     # vysledok
     for city in final_permutation.cities:
-        c2.create_oval(city.x-5, city.y-5, city.x+5, city.y+5,fill="red")
-        c2.create_text(city.x, city.y-10, text=str(city.n))
+        c2.create_oval(city.x*2-5, city.y*2-5, city.x*2+5, city.y*2+5,fill="red")
+        c2.create_text(city.x*2, city.y*2-10, text=str(city.n))
 
     for i in range(len(final_permutation.cities) - 1):
         city1 = final_permutation.cities[i]
         city2 = final_permutation.cities[i + 1]
-        c2.create_line(city1.x, city1.y, city2.x, city2.y)
+        c2.create_line(city1.x*2, city1.y*2, city2.x*2, city2.y*2)
     last = len(final_permutation.cities) - 1
     city1 = final_permutation.cities[last]
     city2 = final_permutation.cities[0]
-    c2.create_line(city1.x , city1.y , city2.x , city2.y )
+    c2.create_line(city1.x*2 , city1.y*2 , city2.x*2 , city2.y*2 )
 
     window.mainloop()
 
@@ -196,13 +167,14 @@ def load_example():
 
 
 def write_to_file(cities):
-    f = open("input.txt", "w")
+    name = input("Nazov suboru +.txt\n")
+    f = open(name, "w")
     for city in cities:
         print(city.x, city.y, file=f)
     f.close()
 
-def load_from_file():
-    f = open("input.txt", "r")
+def load_from_file(name):
+    f = open(name, "r")
     lines = f.readlines()
     cities = []
     counter = 0
@@ -225,14 +197,15 @@ def create_matrix(cities, n):
             matrix[i][k] = math.sqrt(math.pow((cities[i].x - cities[k].x), 2) + math.pow((cities[i].y - cities[k].y), 2))
     return matrix
 
-def calculate_distance_test(cities, matrix):
+def calculate_distance_w_matrix(cities, matrix):
     length = len(cities)
     distance = 0
     for i in range(length - 1):
         distance += matrix[cities[i].n-1][cities[i+1].n-1]
 
     l = len(cities) - 1
-    distance += math.sqrt(math.pow((cities[l].x - cities[0].x), 2) + math.pow((cities[l].y - cities[0].y), 2))
+    distance += matrix[cities[l].n-1][cities[0].n-1]
+    #distance += math.sqrt(math.pow((cities[l].x - cities[0].x), 2) + math.pow((cities[l].y - cities[0].y), 2))
     return distance
 
 def main():
@@ -240,23 +213,23 @@ def main():
     global MAX_STEPS
     global best_solution
     global children_type
-    load_option = input("Read from input file or generate random permutation or load sample permutation? 1/2/3 \n")
+    load_option = input("Čítať zo súboru, vygenerovať náhodné mestá alebo vzorový vstup zo zadania? 1/2/3 \n")
     cities = []
     if load_option == "1":
-        cities = load_from_file()
+        name = input("Nazov suboru +.txt\n")
+        cities = load_from_file(name)
     elif load_option == "2":
-        number_cities = int(input("Number of cities "))
+        number_cities = int(input("Počet miest "))
         cities = generate_cities(number_cities)
     else:
         cities = load_example()
-    #write_to_file(cities)
     matrix = create_matrix(cities, len(cities))
-    length_tabu = int(input("Length of tabu list "))
+    length_tabu = int(input("Dĺžka tabu listu "))
     MAX_TABU_LENGTH = length_tabu
-    MAX_STEPS = int(input("Number of generations "))
-    children_type = int(input("Children type 1 (zo zadania) /2 lepsi sposob\n"))
-    start_perm = Permutation(cities, calculate_distance(cities))
-    dist = calculate_distance_test(cities, matrix)
+    MAX_STEPS = int(input("Počet generácií (koľko krát generujem nasledovníkov) "))
+    children_type = int(input("Typ generovania nasledovníkov 1 (zo zadania) /2 výmena náhodného mesta s ostatnými\n"))
+    start_perm = Permutation(cities, calculate_distance_w_matrix(cities,matrix))
+    dist = calculate_distance_w_matrix(cities, matrix)
     print(dist)
     print(start_perm.distance)
 
@@ -271,8 +244,8 @@ def main():
     end = time.time()
     print(end - start, "s")
     draw_salesman(first, final)
-    save = input("Save this cities config? yes/no \n")
-    if save=="yes":
+    save = input("Uložiť túto permutáciu miest? ano/nie \n")
+    if save=="ano":
         write_to_file(first.cities)
 
 
